@@ -1,1 +1,16 @@
 
+{
+  "name": "AURA 3D Pro",
+  "short_name": "AURA",
+  "description": "내 얼굴 사진으로 화장품을 미리 발라보는 가상 메이크업",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8F5F2",
+  "theme_color": "#E11D48",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
