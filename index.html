@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AURA 3D Pro</title>
+<meta name="theme-color" content="#E11D48">
+<meta name="description" content="내 얼굴 사진으로 화장품을 미리 발라보는 가상 메이크업">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,sans-serif;}
+  body{background:#F8F5F2;color:#292524;padding-bottom:40px;}
+  header{position:sticky;top:0;z-index:50;background:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E7E5E4;}
+  .logo{font-weight:800;font-size:18px;} .logo span{color:#E11D48;font-weight:400;}
+  .top-btns{display:flex;gap:8px;} button{cursor:pointer;border:none;outline:none;}
+  .btn-pill{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#F5F5F4;border:1px solid #D6D3D1;}
+  .badge{background:#E11D48;color:#fff;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:3px;}
+  .container{max-width:600px;margin:0 auto;padding:12px;display:flex;flex-direction:column;gap:12px;}
+  .card{background:#fff;border-radius:20px;padding:14px;border:1px solid #EBE5E0;}
+  .card-title{font-size:13px;font-weight:800;margin-bottom:4px;}
+  .card-sub{font-size:11px;color:#78716C;margin-bottom:10px;}
+  .upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .upload-box{border:1.5px dashed #D6D3D1;border-radius:12px;padding:10px 4px;text-align:center;font-size:12px;font-weight:700;color:#57534E;background:#FAFAF9;display:block;}
+  .upload-box.done{border-color:#10B981;background:#ECFDF5;color:#047857;border-style:solid;}
+  .viewer-wrap{position:relative;width:100%;height:340px;background:radial-gradient(circle,#F5EFEA,#DFD5CE);border-radius:18px;overflow:hidden;touch-action:none;}
+  canvas{width:100%;height:100%;display:block;}
+  .viewer-top{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;font-size:11px;}
+  .hint-pill{background:rgba(255,255,255,0.9);padding:4px 10px;border-radius:14px;font-weight:600;}
+  .compare-btn{background:#1C1917;color:#fff;padding:5px 11px;border-radius:14px;font-size:11px;font-weight:700;}
+  .viewer-bottom{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:#fff;padding:5px 10px;border-radius:20px;display:flex;gap:5px;box-shadow:0 2px 10px rgba(0,0,0,0.1);white-space:nowrap;}
+  .v-btn{padding:4px 9px;border-radius:12px;font-size:11px;font-weight:700;background:transparent;}
+  .v-btn.active{background:#1C1917;color:#fff;} .v-btn.reset{color:#E11D48;}
+  .zoom-bar{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:11px;font-weight:700;}
+  .zoom-bar span:first-child{width:70px;} .zoom-bar input{flex:1;accent-color:#E11D48;}
+  .tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+  .tag-btn{font-size:10px;padding:4px 8px;border-radius:12px;background:#F5F5F4;color:#57534E;font-weight:700;}
+  .ai-row{display:flex;gap:6px;} .ai-input{flex:1;padding:9px 12px;border:1px solid #D6D3D1;border-radius:12px;font-size:12px;}
+  .ai-btn{padding:9px 14px;background:#1C1917;color:#fff;border-radius:12px;font-size:12px;font-weight:700;}
+  .ai-result{margin-top:8px;padding:10px;background:#FFF1F2;border:1px solid #FECDD3;border-radius:12px;font-size:11px;line-height:1.5;color:#881337;display:none;}
+  .tabs{display:flex;gap:6px;margin-bottom:10px;}
+  .tab{padding:6px 14px;border-radius:16px;font-size:12px;font-weight:700;background:#F5F5F4;} .tab.active{background:#1C1917;color:#fff;}
+  .prod-list{display:flex;flex-direction:column;gap:8px;}
+  .prod-item{display:flex;align-items:center;justify-content:space-between;padding:10px;border:1.5px solid #E7E5E4;border-radius:14px;}
+  .prod-item.selected{border-color:#E11D48;background:#FFF1F2;}
+  .prod-info{display:flex;align-items:center;gap:10px;}
+  .swatch{width:30px;height:30px;border-radius:50%;border:1px solid rgba(0,0,0,0.1);flex-shrink:0;}
+  .brand{font-size:10px;font-weight:700;color:#78716C;} .ai-pick{background:#E11D48;color:#fff;font-size:9px;padding:1px 5px;border-radius:6px;margin-left:4px;}
+  .pname{font-size:12px;font-weight:800;}
+  .save-btn{padding:6px 10px;border-radius:10px;font-size:11px;font-weight:700;background:#F5F5F4;border:1px solid #D6D3D1;}
+  .save-btn.saved{background:#E11D48;color:#fff;border-color:#E11D48;}
+  .tech-box{margin-top:10px;padding:12px;background:#FAF7F5;border-radius:14px;border:1px solid #E7E5E4;}
+  .tech-title{font-size:12px;font-weight:800;margin-bottom:4px;} .tech-desc{font-size:11px;line-height:1.55;color:#44403C;}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:none;align-items:center;justify-content:center;padding:16px;}
+  .modal.open{display:flex;} .modal-body{background:#fff;width:100%;max-width:400px;border-radius:22px;padding:18px;}
+  .wish-row{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#F5F5F4;border-radius:12px;margin-top:8px;}
+  .buy-link{background:#1C1917;color:#fff;text-decoration:none;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;}
+  .face-msg{margin-top:8px;font-size:11px;color:#78716C;min-height:14px;line-height:1.4;} .face-msg.ok{color:#047857;} .face-msg.err{color:#BE123C;}
+  .shade-note{margin-top:8px;margin-bottom:0;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">AURA <span>3D PRO</span></div>
+  <div class="top-btns">
+    <button class="btn-pill" onclick="toggleWish()">🛍️ <span data-t="wishBtn">저장목록</span><span class="badge" id="wCount">0</span></button>
+    <button class="btn-pill" onclick="switchLang()">EN / 한국어</button>
+  </div>
+</header>
+<div class="container">
+  <div class="card">
+    <div class="card-title" data-t="upTitle">1. 정면 셀카 올리기</div>
+    <div class="card-sub" data-t="upSub">정면 사진 한 장이면 돼요. 얼굴을 자동으로 찾아 화장 위치를 맞춰요. 좌·우 사진은 회전해서 보기 위한 선택 사항이에요.</div>
+    <div class="upload-grid">
+      <label class="upload-box" id="box-front">📷 <span data-t="pFront">정면 사진</span><input type="file" accept="image/*" hidden onchange="loadFace(event,'front')"></label>
+      <label class="upload-box" id="box-left">◀ <span data-t="pLeft">좌측 45° (선택)</span><input type="file" accept="image/*" hidden onchange="loadFace(event,'left')"></label>
+      <label class="upload-box" id="box-right">▶ <span data-t="pRight">우측 45° (선택)</span><input type="file" accept="image/*" hidden onchange="loadFace(event,'right')"></label>
+    </div>
+    <div class="face-msg" id="faceMsg"></div>
+  </div>
+  <div class="card">
+    <div class="viewer-wrap" id="stage">
+      <canvas id="faceCanvas" width="600" height="600"></canvas>
+      <div class="viewer-top">
+        <span class="hint-pill" id="angleText">0°</span>
+        <button class="compare-btn" ontouchstart="setBare(true)" ontouchend="setBare(false)" onmousedown="setBare(true)" onmouseup="setBare(false)" data-t="bareBtn">👁️ 꾹 눌러 맨얼굴 비교</button>
+      </div>
+      <div class="viewer-bottom">
+        <button class="v-btn" onclick="setAngle(-75)" data-t="vLeft">좌측</button>
+        <button class="v-btn active" onclick="setAngle(0)" data-t="vFront">정면</button>
+        <button class="v-btn" onclick="setAngle(75)" data-t="vRight">우측</button>
+        <button class="v-btn reset" onclick="resetMakeup()" data-t="vReset">화장 지우기</button>
+      </div>
+    </div>
+    <div class="zoom-bar"><span data-t="zoomLabel">🔍 얼굴 확대</span><input type="range" min="80" max="180" value="100" oninput="setZoom(this.value)"><span id="zoomVal">100%</span></div>
+    <div class="zoom-bar"><span data-t="opLabel">🎨 발색 농도</span><input type="range" min="20" max="100" value="70" oninput="setOp(this.value)"><span id="opVal">70%</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title" data-t="aiTitle">✨ AI 얼굴 컴플렉스 맞춤 재설정</div>
+    <div class="card-sub" data-t="aiSub">고민을 입력하면 AI가 추천 제품과 화장 기법을 재구성합니다.</div>
+    <div class="tags">
+      <button class="tag-btn" onclick="quickAI('mid')" data-t="tMid">#긴 중안부</button>
+      <button class="tag-btn" onclick="quickAI('dark')" data-t="tDark">#다크서클·홍조</button>
+      <button class="tag-btn" onclick="quickAI('lip')" data-t="tLip">#얇은 입술</button>
+      <button class="tag-btn" onclick="quickAI('jaw')" data-t="tJaw">#각진 턱선</button>
+    </div>
+    <div class="ai-row">
+      <input class="ai-input" id="cInput" placeholder="예: 중안부가 길어 보이고 다크서클이 고민이에요">
+      <button class="ai-btn" onclick="runAI()" data-t="aiBtn">AI 재추천</button>
+    </div>
+    <div class="ai-result" id="aiBox"></div>
+  </div>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" id="tab-base" onclick="setCat('base')" data-t="cBase">베이스</button>
+      <button class="tab" id="tab-eye" onclick="setCat('eye')" data-t="cEye">아이</button>
+      <button class="tab" id="tab-cheek" onclick="setCat('cheek')" data-t="cCheek">치크</button>
+      <button class="tab" id="tab-lip" onclick="setCat('lip')" data-t="cLip">립</button>
+    </div>
+    <div class="prod-list" id="prodList"></div>
+    <div class="card-sub shade-note" data-t="shadeNote">화면 색상은 실제 제품 색과 다를 수 있어요.</div>
+    <div class="tech-box">
+      <div class="tech-title" data-t="techTitle">🖌️ 부위별 상세 화장 기법 설명</div>
+      <div class="tech-desc" id="techDesc" data-t="techInit">화장품을 터치하면 3D 얼굴 모델에 즉시 화장품이 칠해지며 맞춤 화장 기법이 표시됩니다.</div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="wishModal">
+  <div class="modal-body">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <strong style="font-size:15px;" data-t="wishTitle">저장한 화장품 목록</strong>
+      <button onclick="toggleWish()" style="font-size:20px;background:none;">&times;</button>
+    </div>
+    <div id="wishList"></div>
+  </div>
+</div>
+<script src="products.js"></script>
+<script>
+var lang='ko', curCat='base', selId=null, aiTag='all', wish=[], yaw=0, zoom=1.0, op=0.70, bare=false, dragging=false, lastX=0;
+var makeup={base:'#F5D5B8',eye:null,cheek:null,lip:'#D88A8E'}, userImgs={front:null,left:null,right:null};
+var chosen={base:false,eye:false,cheek:false,lip:false}, lm=null, lastMsg={k:'',cls:''};
+var dict={
+  ko:{wishBtn:"저장목록",upTitle:"1. 정면 셀카 올리기",upSub:"정면 사진 한 장이면 돼요. 얼굴을 자동으로 찾아 화장 위치를 맞춰요. 좌·우 사진은 회전해서 보기 위한 선택 사항이에요.",pFront:"정면 사진",pLeft:"좌측 45° (선택)",pRight:"우측 45° (선택)",scanning:"얼굴을 찾는 중이에요…",found:"얼굴을 찾았어요! 이제 화장품을 눌러보세요.",notfound:"얼굴을 찾지 못했어요. 얼굴이 크게 나온 정면 사진으로 다시 올려주세요.",loadfail:"얼굴 인식을 불러오지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.",shadeNote:"화면 색상은 실제 제품 색과 다를 수 있어요.",bareBtn:"👁️ 꾹 눌러 맨얼굴 비교",vLeft:"좌측",vFront:"정면",vRight:"우측",vReset:"화장 지우기",zoomLabel:"🔍 얼굴 확대",opLabel:"🎨 발색 농도",aiTitle:"✨ AI 얼굴 컴플렉스 맞춤 재설정",aiSub:"고민을 입력하면 AI가 추천 제품과 화장 기법을 재구성합니다.",tMid:"#긴 중안부",tDark:"#다크서클·홍조",tLip:"#얇은 입술",tJaw:"#각진 턱선",aiBtn:"AI 재추천",cBase:"베이스",cEye:"아이",cCheek:"치크",cLip:"립",techTitle:"🖌️ 부위별 상세 화장 기법 설명",techInit:"화장품을 터치하면 3D 얼굴 모델에 즉시 화장품이 칠해지며 맞춤 화장 기법이 표시됩니다.",wishTitle:"저장한 화장품 목록",save:"저장",saved:"저장됨",buy:"구매 링크 ↗",empty:"저장된 상품이 없습니다.",pick:"AI 추천",ph:"예: 중안부가 길어 보이고 다크서클이 고민이에요"},
+  en:{wishBtn:"Saved",upTitle:"1. Upload a Front Selfie",upSub:"One front photo is enough. Makeup is placed on your face automatically. Side photos are optional for the rotation view.",pFront:"Front",pLeft:"Left 45° (optional)",pRight:"Right 45° (optional)",scanning:"Finding your face…",found:"Face found! Tap a product to try it on.",notfound:"No face found. Please upload a clear, front-facing photo.",loadfail:"Couldn't load face detection. Check your connection and try again.",shadeNote:"On-screen colors may differ from the real product.",bareBtn:"👁️ Hold: Bare Face",vLeft:"Left",vFront:"Front",vRight:"Right",vReset:"Reset",zoomLabel:"🔍 Zoom Face",opLabel:"🎨 Opacity",aiTitle:"✨ AI Complex Re-Designer",aiSub:"Enter concerns to re-rank products and makeup techniques.",tMid:"#Long Mid-face",tDark:"#Dark Circles",tLip:"#Thin Lips",tJaw:"#Jaw Contour",aiBtn:"AI Match",cBase:"Base",cEye:"Eye",cCheek:"Cheek",cLip:"Lip",techTitle:"🖌️ Detailed Makeup Technique Guide",techInit:"Tap any product to apply it to your 3D face with step-by-step tips.",wishTitle:"Saved Products",save:"Save",saved:"Saved",buy:"Buy Now ↗",empty:"No saved items yet.",pick:"AI Pick",ph:"e.g. My mid-face looks long and I have dark circles"}
+};
+var canvas=document.getElementById('faceCanvas'), ctx=canvas.getContext('2d');
+function drawImgFit(img,x,y,w,h,a){if(!img)return;var r=Math.max(w/img.width,h/img.height),nw=img.width*r,nh=img.height*r;ctx.save();ctx.globalAlpha=a;ctx.drawImage(img,x+(w-nw)/2,y+(h-nh)/2,nw,nh);ctx.restore();}
+function draw3DFace(){
+  ctx.clearRect(0,0,600,600);ctx.save();ctx.translate(300,305);ctx.scale(zoom,zoom);
+  var rad=yaw*Math.PI/180,shiftX=Math.sin(rad)*75,scaleX=Math.cos(rad*0.45),useLM=!!(userImgs.front&&lm);
+  ctx.fillStyle='#E8C3A5';ctx.beginPath();ctx.roundRect(-55+shiftX*0.3,120,110,130,20);ctx.fill();
+  var grad=ctx.createRadialGradient(-30+shiftX,-40,20,shiftX*0.5,0,180);
+  grad.addColorStop(0,bare?'#F5D5B8':makeup.base);grad.addColorStop(1,'#CFA483');
+  ctx.fillStyle=grad;ctx.beginPath();ctx.ellipse(shiftX*0.25,0,128*scaleX,168,0,0,Math.PI*2);ctx.fill();
+  if(userImgs.front||userImgs.left||userImgs.right){
+    ctx.save();ctx.beginPath();ctx.ellipse(shiftX*0.25,0,126*scaleX,166,0,0,Math.PI*2);ctx.clip();
+    var sr=Math.min(1,Math.abs(yaw)/55);
+    if(userImgs.front)drawImgFit(userImgs.front,-135+shiftX*0.5,-170,270,340,0.9*(1-sr*0.7));
+    if(yaw<-10&&userImgs.left)drawImgFit(userImgs.left,-135+shiftX*0.5,-170,270,340,0.95*sr);
+    if(yaw>10&&userImgs.right)drawImgFit(userImgs.right,-135+shiftX*0.5,-170,270,340,0.95*sr);
+    ctx.restore();
+  }
+  [-48,48].forEach(function(ex){
+    var x=ex*scaleX+shiftX*0.85;
+    if(!useLM&&!bare&&makeup.eye){ctx.fillStyle=makeup.eye;ctx.globalAlpha=op*0.85;ctx.beginPath();ctx.ellipse(x,-26,26*scaleX,15,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+    if(!userImgs.front){ctx.strokeStyle='#3F2E26';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x-20*scaleX,-48);ctx.quadraticCurveTo(x,-55,x+20*scaleX,-46);ctx.stroke();ctx.fillStyle='#291D18';ctx.beginPath();ctx.ellipse(x,-25,14*scaleX,8,0,0,Math.PI*2);ctx.fill();}
+  });
+  if(!useLM&&!bare&&makeup.cheek){[-58,58].forEach(function(cx){var x=cx*scaleX+shiftX*0.85,cGrad=ctx.createRadialGradient(x,22,2,x,22,36);cGrad.addColorStop(0,makeup.cheek);cGrad.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=cGrad;ctx.globalAlpha=op*0.85;ctx.beginPath();ctx.arc(x,22,36,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});}
+  if(!userImgs.front){ctx.strokeStyle='rgba(130,85,60,0.35)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(shiftX*0.9,-25);ctx.lineTo(shiftX*1.08,28);ctx.lineTo(shiftX*0.95,34);ctx.stroke();}
+  if(useLM){drawMakeupLM(-135+shiftX*0.5);}else{var lx=shiftX*0.88;ctx.fillStyle=bare?'#D88A8E':makeup.lip;ctx.globalAlpha=userImgs.front?(bare?0.2:op*0.75):1;
+  ctx.beginPath();ctx.moveTo(lx-30*scaleX,76);ctx.quadraticCurveTo(lx-10*scaleX,64,lx,70);ctx.quadraticCurveTo(lx+10*scaleX,64,lx+30*scaleX,76);ctx.quadraticCurveTo(lx,96,lx-30*scaleX,76);ctx.fill();}
+  ctx.restore();document.getElementById('angleText').innerText=Math.round(yaw)+'°';
+}
+var stage=document.getElementById('stage');
+stage.addEventListener('pointerdown',function(e){dragging=true;lastX=e.clientX;});
+window.addEventListener('pointermove',function(e){if(!dragging)return;var dx=e.clientX-lastX;lastX=e.clientX;yaw=Math.max(-90,Math.min(90,yaw+dx*0.6));draw3DFace();});
+window.addEventListener('pointerup',function(){dragging=false;});
+function setAngle(d){yaw=d;draw3DFace();}
+function setZoom(v){zoom=v/100;document.getElementById('zoomVal').innerText=v+'%';draw3DFace();}
+function setOp(v){op=v/100;document.getElementById('opVal').innerText=v+'%';draw3DFace();}
+function setBare(b){bare=b;draw3DFace();}
+// ===== 얼굴 인식 (MediaPipe Face Landmarker, 기기 안에서 처리됩니다) =====
+var LM={
+  oval:[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109],
+  eyeR:[33,246,161,160,159,158,157,173,133,155,154,153,145,144,163,7],
+  eyeL:[362,398,384,385,386,387,388,466,263,249,390,373,374,380,381,382],
+  lidR:[33,246,161,160,159,158,157,173,133],
+  lidL:[263,466,388,387,386,385,384,398,362],
+  lipO:[61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146],
+  lipI:[78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,88,95],
+  cheekR:[205,50,117],
+  cheekL:[425,280,346]
+};
+var landmarker=null, landmarkerLoading=null;
+function getLandmarker(){
+  if(landmarker)return Promise.resolve(landmarker);
+  if(landmarkerLoading)return landmarkerLoading;
+  landmarkerLoading=import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs').then(function(mod){
+    return mod.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm').then(function(vision){
+      return mod.FaceLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'},runningMode:'IMAGE',numFaces:1});
+    });
+  }).then(function(l){landmarker=l;return l;}).catch(function(err){landmarkerLoading=null;throw err;});
+  return landmarkerLoading;
+}
+function prepFront(img){
+  var sc=Math.min(1,1280/Math.max(img.width,img.height)),W=Math.round(img.width*sc),H=Math.round(img.height*sc);
+  var c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(img,0,0,W,H);
+  return c;
+}
+function cropFront(c,pts){
+  var W=c.width,H=c.height,minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  LM.oval.forEach(function(i){var x=pts[i].x*W,y=pts[i].y*H;if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;});
+  var cx=(minX+maxX)/2,cy=(minY+maxY)/2,bw=(maxX-minX)*1.3,bh=(maxY-minY)*1.25,asp=270/340;
+  if(bw/bh>asp)bh=bw/asp;else bw=bh*asp;
+  var sx=cx-bw/2,sy=cy-bh/2,OW=540,OH=680,sc=OW/bw;
+  var out=document.createElement('canvas');out.width=OW;out.height=OH;
+  var o=out.getContext('2d');o.fillStyle='#E8C3A5';o.fillRect(0,0,OW,OH);o.drawImage(c,-sx*sc,-sy*sc,W*sc,H*sc);
+  lm=pts.map(function(p){return{x:(p.x*W-sx)/bw,y:(p.y*H-sy)/bh};});
+  userImgs.front=out;
+}
+function lmPt(i,ox){var p=lm[i];return [ox+p.x*270,-170+p.y*340];}
+function lmPath(ids,ox){ids.forEach(function(id,k){var q=lmPt(id,ox);if(k===0)ctx.moveTo(q[0],q[1]);else ctx.lineTo(q[0],q[1]);});ctx.closePath();}
+function drawMakeupLM(ox){
+  if(bare||!lm)return;
+  var fade=1;
+  if((yaw<-10&&userImgs.left)||(yaw>10&&userImgs.right))fade=1-Math.min(1,Math.abs(yaw)/55)*0.85;
+  if(fade<=0.02)return;
+  var a=op*fade,fw=Math.abs(lmPt(454,ox)[0]-lmPt(234,ox)[0]);
+  ctx.save();
+  if(chosen.base){
+    ctx.save();ctx.filter='blur(2px)';ctx.globalAlpha=a*0.38;ctx.fillStyle=makeup.base;
+    ctx.beginPath();lmPath(LM.oval,ox);lmPath(LM.eyeR,ox);lmPath(LM.eyeL,ox);lmPath(LM.lipO,ox);ctx.fill('evenodd');
+    ctx.restore();
+  }
+  if(makeup.eye){
+    [LM.lidR,LM.lidL].forEach(function(lid){
+      var pts=lid.map(function(i){return lmPt(i,ox);});
+      var ew=Math.hypot(pts[0][0]-pts[pts.length-1][0],pts[0][1]-pts[pts.length-1][1]),lift=ew*0.5;
+      ctx.save();ctx.filter='blur(3px)';ctx.globalCompositeOperation='multiply';ctx.globalAlpha=a*0.75;ctx.fillStyle=makeup.eye;
+      ctx.beginPath();
+      pts.forEach(function(q,k){if(k===0)ctx.moveTo(q[0],q[1]);else ctx.lineTo(q[0],q[1]);});
+      for(var k=pts.length-1;k>=0;k--){var w=Math.sin(Math.PI*k/(pts.length-1));ctx.lineTo(pts[k][0],pts[k][1]-lift*w);}
+      ctx.closePath();ctx.fill();ctx.restore();
+    });
+  }
+  if(makeup.cheek){
+    [LM.cheekR,LM.cheekL].forEach(function(ids){
+      var sx=0,sy=0;ids.forEach(function(i){var q=lmPt(i,ox);sx+=q[0];sy+=q[1];});
+      var cx=sx/ids.length,cy=sy/ids.length,r=fw*0.2,g=ctx.createRadialGradient(cx,cy,2,cx,cy,r);
+      g.addColorStop(0,makeup.cheek);g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.save();ctx.globalAlpha=a*0.6;ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.restore();
+    });
+  }
+  if(chosen.lip){
+    ctx.save();ctx.filter='blur(0.8px)';ctx.globalCompositeOperation='multiply';ctx.globalAlpha=Math.min(1,a*0.95);ctx.fillStyle=makeup.lip;
+    ctx.beginPath();lmPath(LM.lipO,ox);lmPath(LM.lipI,ox);ctx.fill('evenodd');ctx.restore();
+  }
+  ctx.restore();
+}
+function renderMsg(){var el=document.getElementById('faceMsg');if(!el)return;el.className='face-msg '+(lastMsg.cls||'');el.innerText=lastMsg.k?dict[lang][lastMsg.k]:'';}
+function setMsg(k,cls){lastMsg={k:k,cls:cls||''};renderMsg();}
+function processFront(img){
+  setMsg('scanning','');
+  var c=prepFront(img);
+  getLandmarker().then(function(l){
+    var r=l.detect(c),pts=r&&r.faceLandmarks&&r.faceLandmarks[0];
+    if(!pts){setMsg('notfound','err');return;}
+    cropFront(c,pts);
+    document.getElementById('box-front').classList.add('done');
+    setMsg('found','ok');setAngle(0);
+  }).catch(function(){setMsg('loadfail','err');});
+}
+function loadFace(e,s){
+  var f=e.target.files&&e.target.files[0];if(!f)return;
+  var url=URL.createObjectURL(f),img=new Image();
+  img.onload=function(){
+    URL.revokeObjectURL(url);
+    if(s==='front'){processFront(img);}
+    else{userImgs[s]=img;document.getElementById('box-'+s).classList.add('done');setAngle(s==='left'?-65:65);}
+  };
+  img.onerror=function(){URL.revokeObjectURL(url);setMsg('notfound','err');};
+  img.src=url;
+}
+function setCat(c){curCat=c;['base','eye','cheek','lip'].forEach(function(k){document.getElementById('tab-'+k).className=(k===c)?'tab active':'tab';});renderList();}
+function renderList(){
+  var box=document.getElementById('prodList');box.innerHTML='';
+  var sorted=items.filter(function(i){return i.cat===curCat;}).sort(function(a,b){return(b.tags.indexOf(aiTag)!==-1?1:0)-(a.tags.indexOf(aiTag)!==-1?1:0);});
+  sorted.forEach(function(p){
+    var div=document.createElement('div');div.className='prod-item'+(selId===p.id?' selected':'');
+    div.onclick=function(){selId=p.id;makeup[p.cat]=p.color;chosen[p.cat]=true;document.getElementById('techDesc').innerText=p.tech[lang];draw3DFace();renderList();};
+    var saved=wish.indexOf(p.id)!==-1,isPick=(aiTag!=='all'&&p.tags.indexOf(aiTag)!==-1);
+    div.innerHTML='<div class="prod-info"><span class="swatch" style="background:'+p.color+'"></span><div><div class="brand">'+p.brand+(isPick?'<span class="ai-pick">'+dict[lang].pick+'</span>':'')+'</div><div class="pname">'+p.name[lang]+'</div></div></div><button class="save-btn '+(saved?'saved':'')+'" onclick="event.stopPropagation();saveWish(\''+p.id+'\')">'+(saved?dict[lang].saved:dict[lang].save)+'</button>';
+    box.appendChild(div);
+  });
+}
+function resetMakeup(){makeup={base:'#F5D5B8',eye:null,cheek:null,lip:'#D88A8E'};chosen={base:false,eye:false,cheek:false,lip:false};selId=null;document.getElementById('techDesc').innerText=dict[lang].techInit;draw3DFace();renderList();}
+function quickAI(t){var m={mid:{ko:'중안부가 길어 보이고 인중이 길어서 고민이에요',en:'Long mid-face'},dark:{ko:'다크서클과 홍조를 커버하고 싶어요',en:'Cover dark circles'},lip:{ko:'입술이 얇아서 볼륨감 있게 보이고 싶어요',en:'Plump thin lips'},jaw:{ko:'각진 턱선과 외곽 여백을 줄이고 싶어요',en:'Soften jawline'}};document.getElementById('cInput').value=m[t][lang];runAI(t);}
+function runAI(preset){var txt=document.getElementById('cInput').value.trim();if(!txt)return;var tag=preset||'all';if(!preset){if(txt.indexOf('중안부')!==-1||txt.indexOf('긴')!==-1)tag='mid';else if(txt.indexOf('다크')!==-1||txt.indexOf('홍조')!==-1)tag='dark';else if(txt.indexOf('입술')!==-1)tag='lip';else if(txt.indexOf('턱')!==-1)tag='jaw';}aiTag=tag;var box=document.getElementById('aiBox');box.style.display='block';box.innerHTML=(lang==='ko')?'<strong>AI 맞춤 처방 완료:</strong> "'+txt+'" 보완을 위해 <strong>AI 추천 배지</strong> 제품을 최상단으로 재정렬했습니다.':'<strong>AI Complete:</strong> Re-ranked top products with <strong>AI Pick</strong> badges.';if(tag==='dark')setCat('base');else if(tag==='lip')setCat('lip');else setCat('cheek');}
+function saveWish(id){var idx=wish.indexOf(id);if(idx===-1)wish.push(id);else wish.splice(idx,1);document.getElementById('wCount').innerText=wish.length;renderList();if(document.getElementById('wishModal').classList.contains('open'))renderWish();}
+function renderWish(){
+  var box=document.getElementById('wishList');
+  if(!wish.length){box.innerHTML='<div style="font-size:12px;color:#78716C;padding:10px 0;">'+dict[lang].empty+'</div>';return;}
+  box.innerHTML='';
+  wish.forEach(function(id){
+    var p=items.filter(function(i){return i.id===id;})[0];if(!p)return;
+    var row=document.createElement('div');row.className='wish-row';
+    row.innerHTML='<div><div class="brand">'+p.brand+'</div><div class="pname">'+p.name[lang]+'</div></div><a class="buy-link" href="'+p.url+'" target="_blank" rel="noopener">'+dict[lang].buy+'</a>';
+    box.appendChild(row);
+  });
+}
+function toggleWish(){var m=document.getElementById('wishModal');var isOpen=m.classList.toggle('open');if(isOpen)renderWish();}
+function switchLang(){
+  lang=(lang==='ko')?'en':'ko';document.documentElement.lang=lang;
+  document.querySelectorAll('[data-t]').forEach(function(el){var k=el.getAttribute('data-t');if(dict[lang][k]!==undefined)el.innerText=dict[lang][k];});
+  document.getElementById('cInput').placeholder=dict[lang].ph;renderMsg();
+  var sel=items.filter(function(i){return i.id===selId;})[0];
+  document.getElementById('techDesc').innerText=sel?sel.tech[lang]:dict[lang].techInit;
+  renderList();
+  if(document.getElementById('wishModal').classList.contains('open'))renderWish();
+}
+draw3DFace();renderList();
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+</script>
+</body>
+</html>
